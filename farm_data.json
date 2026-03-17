@@ -1,0 +1,77 @@
+{
+  "grid_info": {
+    "cols": 20,
+    "rows": 31,
+    "total_cells": 620
+  },
+  "trees": [
+    {
+      "type": "Mango",
+      "position": "A0",
+      "age": 5,
+      "status": "Alive",
+      "yield": 45.5,
+      "seasonal_yield": {
+        "Spring": 15.0,
+        "Summer": 20.0,
+        "Fall": 10.5
+      }
+    },
+    {
+      "type": "Apple",
+      "position": "A1",
+      "age": 3,
+      "status": "Dead",
+      "yield": 28.0,
+      "seasonal_yield": {}
+    },
+    {
+      "type": "Teak",
+      "position": "B0",
+      "age": 8,
+      "status": "Alive",
+      "yield": 62.3,
+      "seasonal_yield": {}
+    },
+    {
+      "type": "Coconut",
+      "position": "C5",
+      "age": 2,
+      "status": "Alive",
+      "yield": 15.0,
+      "seasonal_yield": {}
+    },
+    {
+      "type": "Mango",
+      "position": "D10",
+      "age": 4,
+      "status": "Alive",
+      "yield": 35.2,
+      "seasonal_yield": {}
+    },
+    {
+      "type": "Bamboo",
+      "position": "E2",
+      "age": 1,
+      "status": "Alive",
+      "yield": 10.5,
+      "seasonal_yield": {}
+    },
+    {
+      "type": "Oak",
+      "position": "F8",
+      "age": 6,
+      "status": "Alive",
+      "yield": 55.0,
+      "seasonal_yield": {}
+    },
+    {
+      "type": "Mango",
+      "position": "G3",
+      "age": 7,
+      "status": "Alive",
+      "yield": 50.0,
+      "seasonal_yield": {}
+    }
+  ]
+}

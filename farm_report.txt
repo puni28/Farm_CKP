@@ -1,0 +1,27 @@
+==================================================
+FARM LAND MANAGEMENT REPORT
+==================================================
+
+OVERVIEW
+--------------------------------------------------
+Total Grid Size: 0 cells
+Total Trees: 8
+Alive Trees: 7
+Dead Trees: 1
+Empty Cells: 612
+
+YIELD INFORMATION
+--------------------------------------------------
+Total Yield: 301.50
+Average Age: 4.5 years
+
+YIELD BY TREE TYPE
+--------------------------------------------------
+Mango: 130.70
+Apple: 28.00
+Teak: 62.30
+Coconut: 15.00
+Bamboo: 10.50
+Oak: 55.00
+
+==================================================
