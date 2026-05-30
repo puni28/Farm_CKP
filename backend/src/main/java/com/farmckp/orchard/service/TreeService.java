@@ -22,8 +22,20 @@ public class TreeService {
     }
 
     public List<TreeDTO> findWithFilters(Long orchardId, Tree.TreeStatus status, Integer row, Integer col, String variety, Integer minHealth) {
-        return treeRepository.findWithFilters(orchardId, status, row, col, variety, minHealth)
-            .stream().map(this::toDTO).toList();
+        boolean hasFilters = status != null || row != null || col != null
+            || (variety != null && !variety.isBlank()) || minHealth != null;
+        if (!hasFilters) {
+            return treeRepository.findByOrchardId(orchardId).stream().map(this::toDTO).toList();
+        }
+        List<Tree> all = treeRepository.findByOrchardId(orchardId);
+        return all.stream()
+            .filter(t -> status == null || t.getStatus() == status)
+            .filter(t -> row == null || t.getRowNumber().equals(row))
+            .filter(t -> col == null || t.getColumnNumber().equals(col))
+            .filter(t -> variety == null || variety.isBlank() || (t.getVariety() != null && t.getVariety().toLowerCase().contains(variety.toLowerCase())))
+            .filter(t -> minHealth == null || t.getHealthScore() >= minHealth)
+            .map(this::toDTO)
+            .toList();
     }
 
     public TreeDTO findById(Long id) {

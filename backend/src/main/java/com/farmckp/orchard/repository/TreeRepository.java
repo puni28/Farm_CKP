@@ -20,7 +20,7 @@ public interface TreeRepository extends JpaRepository<Tree, Long> {
            "AND (:status IS NULL OR t.status = :status) " +
            "AND (:rowNumber IS NULL OR t.rowNumber = :rowNumber) " +
            "AND (:columnNumber IS NULL OR t.columnNumber = :columnNumber) " +
-           "AND (:variety IS NULL OR LOWER(t.variety) LIKE LOWER(CONCAT('%', :variety, '%'))) " +
+           "AND (:variety IS NULL OR t.variety LIKE CONCAT('%', :variety, '%')) " +
            "AND (:minHealthScore IS NULL OR t.healthScore >= :minHealthScore)")
     List<Tree> findWithFilters(
         @Param("orchardId") Long orchardId,
