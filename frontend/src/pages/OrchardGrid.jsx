@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getTrees } from '../api/trees';
+import { getTrees, updateTree } from '../api/trees';
 import { getOrchards } from '../api/orchards';
+import { getVarieties } from '../api/varieties';
 import TreeCell from '../components/TreeCell';
 import TreeFilters from '../components/TreeFilters';
 import StatusBadge from '../components/StatusBadge';
@@ -17,7 +18,8 @@ const LEGEND = [
   { status: 'DEAD', label: 'Dead' },
 ];
 
-// Convert 1-based index to letter label: 1→A, 26→Z, 27→AA, 28→AB, ...
+const STATUSES = ['HEALTHY', 'NEEDS_ATTENTION', 'DISEASED', 'DEAD'];
+
 function toLetterLabel(n) {
   let label = '';
   while (n > 0) {
@@ -65,19 +67,29 @@ export default function OrchardGrid() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [rowMode, setRowMode] = useState('numbers');
   const [colMode, setColMode] = useState('numbers');
+
+  // Multi-select
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [varieties, setVarieties] = useState([]);
+  const [bulkVariety, setBulkVariety] = useState('');
+  const [bulkStatus, setBulkStatus] = useState('');
+  const [bulkApplying, setBulkApplying] = useState(false);
+
   const navigate = useNavigate();
 
+  const loadTrees = (orchardId) =>
+    getTrees(orchardId).then(res => { setTrees(res.data); setFilteredTrees(res.data); });
+
   useEffect(() => {
-    getOrchards()
-      .then(res => {
-        const o = res.data[0];
+    Promise.all([getOrchards(), getVarieties()])
+      .then(([orchRes, varRes]) => {
+        const o = orchRes.data[0];
         setOrchard(o);
+        setVarieties(varRes.data);
         return getTrees(o.id);
       })
-      .then(res => {
-        setTrees(res.data);
-        setFilteredTrees(res.data);
-      })
+      .then(res => { setTrees(res.data); setFilteredTrees(res.data); })
       .catch(() => setError('Failed to load orchard data.'))
       .finally(() => setLoading(false));
   }, []);
@@ -85,10 +97,7 @@ export default function OrchardGrid() {
   useEffect(() => {
     if (!orchard) return;
     const hasFilters = Object.values(filters).some(v => v !== '' && v != null);
-    if (!hasFilters) {
-      setFilteredTrees(trees);
-      return;
-    }
+    if (!hasFilters) { setFilteredTrees(trees); return; }
     getTrees(orchard.id, {
       status: filters.status || undefined,
       row: filters.row || undefined,
@@ -104,6 +113,48 @@ export default function OrchardGrid() {
   const rows = orchard?.totalRows || 10;
   const cols = orchard?.totalColumns || 12;
 
+  const toggleSelect = (tree) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      next.has(tree.id) ? next.delete(tree.id) : next.add(tree.id);
+      return next;
+    });
+  };
+
+  const exitSelectMode = () => {
+    setSelectMode(false);
+    setSelectedIds(new Set());
+    setBulkVariety('');
+    setBulkStatus('');
+  };
+
+  const applyBulk = async () => {
+    if (!bulkVariety && !bulkStatus) return;
+    setBulkApplying(true);
+    try {
+      const selectedTrees = trees.filter(t => selectedIds.has(t.id));
+      await Promise.all(selectedTrees.map(t =>
+        updateTree(t.id, {
+          orchardId: t.orchardId,
+          rowNumber: t.rowNumber,
+          columnNumber: t.columnNumber,
+          variety: bulkVariety || t.variety,
+          plantingDate: t.plantingDate,
+          status: bulkStatus || t.status,
+          healthScore: t.healthScore,
+          lastInspectionDate: t.lastInspectionDate,
+          currentSeasonYieldKg: t.currentSeasonYieldKg,
+          totalLifetimeYieldKg: t.totalLifetimeYieldKg,
+          notes: t.notes,
+        })
+      ));
+      await loadTrees(orchard.id);
+      exitSelectMode();
+    } finally {
+      setBulkApplying(false);
+    }
+  };
+
   if (loading) return <LoadingSpinner message="Loading orchard..." />;
   if (error) return <div className="p-6"><ErrorMessage message={error} /></div>;
 
@@ -117,23 +168,81 @@ export default function OrchardGrid() {
           <h1 className="text-2xl font-bold text-gray-900">{orchard?.name}</h1>
           <p className="text-gray-500 text-sm">{orchard?.location} · {orchard?.totalRows}×{orchard?.totalColumns} grid · {trees.length} trees</p>
         </div>
-        <button
-          onClick={() => setShowAddForm(v => !v)}
-          className="bg-green-600 text-white text-sm px-4 py-2 rounded hover:bg-green-700"
-        >
-          + Add Tree
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => { setSelectMode(v => !v); setSelectedIds(new Set()); setSelected(null); }}
+            className={`text-sm px-4 py-2 rounded border transition-colors ${
+              selectMode
+                ? 'bg-blue-600 text-white border-blue-600'
+                : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            {selectMode ? `Selecting (${selectedIds.size})` : '☑ Select Trees'}
+          </button>
+          {selectMode && (
+            <button onClick={exitSelectMode} className="text-sm px-3 py-2 rounded border border-gray-300 text-gray-500 hover:bg-gray-50">
+              Cancel
+            </button>
+          )}
+          {!selectMode && (
+            <button
+              onClick={() => setShowAddForm(v => !v)}
+              className="bg-green-600 text-white text-sm px-4 py-2 rounded hover:bg-green-700"
+            >
+              + Add Tree
+            </button>
+          )}
+        </div>
       </div>
 
-      {showAddForm && (
+      {/* Bulk Edit Panel */}
+      {selectMode && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-5 shadow-sm">
+          <p className="text-sm font-medium text-blue-800 mb-3">
+            {selectedIds.size === 0
+              ? 'Click trees on the grid to select them'
+              : `${selectedIds.size} tree${selectedIds.size > 1 ? 's' : ''} selected`}
+          </p>
+          <div className="flex flex-wrap gap-3 items-end">
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">Set Variety</label>
+              <select
+                value={bulkVariety}
+                onChange={e => setBulkVariety(e.target.value)}
+                className="border border-gray-300 rounded px-2 py-1.5 text-sm bg-white min-w-[160px]"
+              >
+                <option value="">— Keep existing —</option>
+                {varieties.map(v => <option key={v.id} value={v.name}>{v.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">Set Status</label>
+              <select
+                value={bulkStatus}
+                onChange={e => setBulkStatus(e.target.value)}
+                className="border border-gray-300 rounded px-2 py-1.5 text-sm bg-white min-w-[160px]"
+              >
+                <option value="">— Keep existing —</option>
+                {STATUSES.map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
+              </select>
+            </div>
+            <button
+              onClick={applyBulk}
+              disabled={selectedIds.size === 0 || (!bulkVariety && !bulkStatus) || bulkApplying}
+              className="bg-blue-600 text-white text-sm px-5 py-1.5 rounded hover:bg-blue-700 disabled:opacity-40"
+            >
+              {bulkApplying ? 'Applying…' : `Apply to ${selectedIds.size} tree${selectedIds.size !== 1 ? 's' : ''}`}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showAddForm && !selectMode && (
         <div className="bg-white border border-gray-200 rounded-lg p-5 mb-6 shadow-sm">
           <h2 className="text-base font-semibold text-gray-800 mb-4">Add New Tree</h2>
           <TreeForm
             orchardId={orchard.id}
-            onSaved={() => {
-              setShowAddForm(false);
-              getTrees(orchard.id).then(res => { setTrees(res.data); setFilteredTrees(res.data); });
-            }}
+            onSaved={() => { setShowAddForm(false); loadTrees(orchard.id); }}
             onCancel={() => setShowAddForm(false)}
           />
         </div>
@@ -164,55 +273,60 @@ export default function OrchardGrid() {
       </div>
 
       {/* Grid */}
-      <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm mb-6 overflow-x-scroll scrollbar-always" style={{ WebkitOverflowScrolling: 'touch' }}>
-        {/* Inner wrapper — never shrinks, forces scroll instead */}
+      <div
+        className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm mb-6 overflow-x-scroll scrollbar-always"
+        style={{ WebkitOverflowScrolling: 'touch' }}
+      >
         <div style={{ minWidth: `${cols * 52 + 48}px` }}>
-        {/* Column headers */}
-        <div className="flex gap-1 mb-1">
-          <div className="w-10 shrink-0" />
-          {Array.from({ length: cols }, (_, c) => (
-            <div key={c} className="w-12 shrink-0 text-center text-xs text-gray-400 font-medium">
-              {getLabel(c + 1, colMode)}
+          {/* Column headers */}
+          <div className="flex gap-1 mb-1">
+            <div className="w-10 shrink-0" />
+            {Array.from({ length: cols }, (_, c) => (
+              <div key={c} className="w-12 shrink-0 text-center text-xs text-gray-400 font-medium">
+                {getLabel(c + 1, colMode)}
+              </div>
+            ))}
+          </div>
+          {/* Rows */}
+          {Array.from({ length: rows }, (_, r) => (
+            <div key={r} className="flex gap-1 mb-1 items-center">
+              <div className="w-10 shrink-0 text-xs text-gray-400 font-medium text-right pr-1">
+                {getLabel(r + 1, rowMode)}
+              </div>
+              {Array.from({ length: cols }, (_, c) => {
+                const tree = treeMap[`${r + 1}-${c + 1}`];
+                if (!tree) return (
+                  <div key={c} className="w-12 h-12 shrink-0 rounded-md border-2 border-dashed border-gray-200 bg-gray-50" />
+                );
+                return (
+                  <TreeCell
+                    key={c}
+                    tree={tree}
+                    rowLabel={getLabel(r + 1, rowMode)}
+                    colLabel={getLabel(c + 1, colMode)}
+                    onClick={t => {
+                      if (selectMode) toggleSelect(t);
+                      else setSelected(t);
+                    }}
+                    isSelected={selectMode ? selectedIds.has(tree.id) : selected?.id === tree.id}
+                    selectMode={selectMode}
+                  />
+                );
+              })}
             </div>
           ))}
         </div>
-        {/* Rows */}
-        {Array.from({ length: rows }, (_, r) => (
-          <div key={r} className="flex gap-1 mb-1 items-center">
-            {/* Row header */}
-            <div className="w-10 shrink-0 text-xs text-gray-400 font-medium text-right pr-1">
-              {getLabel(r + 1, rowMode)}
-            </div>
-            {Array.from({ length: cols }, (_, c) => {
-              const tree = treeMap[`${r + 1}-${c + 1}`];
-              if (!tree) return (
-                <div key={c} className="w-12 h-12 rounded-md border-2 border-dashed border-gray-200 bg-gray-50" />
-              );
-              return (
-                <TreeCell
-                  key={c}
-                  tree={tree}
-                  rowLabel={getLabel(r + 1, rowMode)}
-                  colLabel={getLabel(c + 1, colMode)}
-                  onClick={t => setSelected(t)}
-                  isSelected={selected?.id === tree.id}
-                />
-              );
-            })}
-          </div>
-        ))}
-        </div>{/* end min-width wrapper */}
       </div>
 
-      {/* Selected Tree Panel */}
-      {selected && (
+      {/* Single Tree Preview Panel (normal mode only) */}
+      {!selectMode && selected && (
         <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm">
           <div className="flex items-start justify-between mb-4">
             <div>
               <h2 className="text-base font-semibold text-gray-900">
                 Tree #{selected.id} — Row {selectedRowLabel}, Col {selectedColLabel}
               </h2>
-              <p className="text-sm text-gray-500">{selected.variety || 'Unknown variety'}</p>
+              <p className="text-sm text-gray-500">{selected.variety || 'No variety set'}</p>
             </div>
             <div className="flex gap-2">
               <button

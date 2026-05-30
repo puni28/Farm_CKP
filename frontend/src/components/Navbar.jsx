@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 const navLinks = [
   { to: '/', label: 'Dashboard' },
   { to: '/orchard', label: 'Orchard Grid' },
+  { to: '/varieties', label: 'Varieties' },
 ];
 
 export default function Navbar() {

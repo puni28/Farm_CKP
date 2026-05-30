@@ -7,6 +7,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Random;
 
 @Component
@@ -17,9 +18,16 @@ public class DataInitializer implements CommandLineRunner {
     private final TreeRepository treeRepository;
     private final InspectionRepository inspectionRepository;
     private final YieldRecordRepository yieldRecordRepository;
+    private final VarietyRepository varietyRepository;
 
     @Override
     public void run(String... args) {
+        // Seed varieties if not present
+        if (varietyRepository.count() == 0) {
+            List.of("Alphonso", "Kesar", "Dasheri", "Langra", "Totapuri", "Banganapalli", "Chaunsa", "Himsagar")
+                .forEach(name -> varietyRepository.save(Variety.builder().name(name).build()));
+        }
+
         if (orchardRepository.count() > 0) return;
 
         Orchard orchard = orchardRepository.save(Orchard.builder()

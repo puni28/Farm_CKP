@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createTree, updateTree } from '../api/trees';
+import { getVarieties } from '../api/varieties';
 
 const STATUSES = ['HEALTHY', 'NEEDS_ATTENTION', 'DISEASED', 'DEAD'];
 
 export default function TreeForm({ orchardId, tree, onSaved, onCancel }) {
+  const [varieties, setVarieties] = useState([]);
   const [form, setForm] = useState({
     orchardId,
     rowNumber: tree?.rowNumber ?? '',
@@ -18,6 +20,10 @@ export default function TreeForm({ orchardId, tree, onSaved, onCancel }) {
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    getVarieties().then(res => setVarieties(res.data)).catch(() => {});
+  }, []);
 
   const handle = (key) => (e) => setForm(f => ({ ...f, [key]: e.target.value }));
 
@@ -62,8 +68,16 @@ export default function TreeForm({ orchardId, tree, onSaved, onCancel }) {
       </div>
       <div>
         <label className="block text-xs text-gray-600 mb-1">Variety</label>
-        <input type="text" value={form.variety} onChange={handle('variety')} placeholder="e.g. Alphonso"
-          className="border border-gray-300 rounded px-2 py-1.5 w-full" />
+        <select value={form.variety} onChange={handle('variety')}
+          className="border border-gray-300 rounded px-2 py-1.5 w-full bg-white">
+          <option value="">— Select variety —</option>
+          {varieties.map(v => (
+            <option key={v.id} value={v.name}>{v.name}</option>
+          ))}
+        </select>
+        <p className="text-xs text-gray-400 mt-0.5">
+          Manage varieties in <a href="/varieties" className="text-blue-500 hover:underline">Varieties settings</a>
+        </p>
       </div>
       <div>
         <label className="block text-xs text-gray-600 mb-1">Planting Date</label>
