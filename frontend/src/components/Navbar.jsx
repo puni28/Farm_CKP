@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 const navLinks = [
   { to: '/', label: 'Dashboard' },
   { to: '/orchard', label: 'Orchard Grid' },
-  { to: '/varieties', label: 'Varieties' },
+  { to: '/settings', label: '⚙ Settings' },
 ];
 
 export default function Navbar() {
@@ -18,7 +18,7 @@ export default function Navbar() {
           key={link.to}
           to={link.to}
           className={`text-sm font-medium px-3 py-1.5 rounded transition-colors ${
-            location.pathname === link.to
+            location.pathname.startsWith(link.to) && (link.to !== '/' || location.pathname === '/')
               ? 'bg-green-100 text-green-800'
               : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
           }`}

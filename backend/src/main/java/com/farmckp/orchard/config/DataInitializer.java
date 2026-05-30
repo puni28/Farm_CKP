@@ -19,6 +19,7 @@ public class DataInitializer implements CommandLineRunner {
     private final InspectionRepository inspectionRepository;
     private final YieldRecordRepository yieldRecordRepository;
     private final VarietyRepository varietyRepository;
+    private final DropdownOptionRepository dropdownOptionRepository;
 
     @Override
     public void run(String... args) {
@@ -26,6 +27,28 @@ public class DataInitializer implements CommandLineRunner {
         if (varietyRepository.count() == 0) {
             List.of("Alphonso", "Kesar", "Dasheri", "Langra", "Totapuri", "Banganapalli", "Chaunsa", "Himsagar")
                 .forEach(name -> varietyRepository.save(Variety.builder().name(name).build()));
+        }
+
+        if (dropdownOptionRepository.count() == 0) {
+            String[][] seeds = {
+                {"CANOPY_CONDITION", "Dense and green"},
+                {"CANOPY_CONDITION", "Moderate coverage"},
+                {"CANOPY_CONDITION", "Sparse, some leaf drop"},
+                {"CANOPY_CONDITION", "Severely thinned"},
+                {"CANOPY_CONDITION", "No foliage"},
+                {"TRUNK_CONDITION", "No visible damage"},
+                {"TRUNK_CONDITION", "Minor bark cracking"},
+                {"TRUNK_CONDITION", "Fungal growth present"},
+                {"TRUNK_CONDITION", "Severe damage or rot"},
+                {"TRUNK_CONDITION", "Borer damage observed"},
+            };
+            for (int i = 0; i < seeds.length; i++) {
+                dropdownOptionRepository.save(DropdownOption.builder()
+                    .category(seeds[i][0])
+                    .value(seeds[i][1])
+                    .sortOrder(i + 1)
+                    .build());
+            }
         }
 
         if (orchardRepository.count() > 0) return;
