@@ -164,7 +164,7 @@ export default function OrchardGrid() {
       </div>
 
       {/* Grid */}
-      <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm mb-6 overflow-x-auto">
+      <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm mb-6 overflow-x-scroll scrollbar-always" style={{ WebkitOverflowScrolling: 'touch' }}>
         {/* Column headers */}
         <div className="flex gap-1 mb-1">
           <div className="w-10 shrink-0" />

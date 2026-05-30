@@ -13,3 +13,22 @@ body {
   min-height: 100vh;
   text-align: left;
 }
+
+/* Always show horizontal scrollbar on the orchard grid */
+.scrollbar-always {
+  overflow-x: scroll;
+}
+.scrollbar-always::-webkit-scrollbar {
+  height: 8px;
+}
+.scrollbar-always::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+.scrollbar-always::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 4px;
+}
+.scrollbar-always::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
