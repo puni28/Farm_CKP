@@ -165,11 +165,13 @@ export default function OrchardGrid() {
 
       {/* Grid */}
       <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm mb-6 overflow-x-scroll scrollbar-always" style={{ WebkitOverflowScrolling: 'touch' }}>
+        {/* Inner wrapper — never shrinks, forces scroll instead */}
+        <div style={{ minWidth: `${cols * 52 + 48}px` }}>
         {/* Column headers */}
         <div className="flex gap-1 mb-1">
           <div className="w-10 shrink-0" />
           {Array.from({ length: cols }, (_, c) => (
-            <div key={c} className="w-12 text-center text-xs text-gray-400 font-medium">
+            <div key={c} className="w-12 shrink-0 text-center text-xs text-gray-400 font-medium">
               {getLabel(c + 1, colMode)}
             </div>
           ))}
@@ -178,7 +180,7 @@ export default function OrchardGrid() {
         {Array.from({ length: rows }, (_, r) => (
           <div key={r} className="flex gap-1 mb-1 items-center">
             {/* Row header */}
-            <div className="w-10 text-xs text-gray-400 font-medium text-right pr-1 shrink-0">
+            <div className="w-10 shrink-0 text-xs text-gray-400 font-medium text-right pr-1">
               {getLabel(r + 1, rowMode)}
             </div>
             {Array.from({ length: cols }, (_, c) => {
@@ -199,6 +201,7 @@ export default function OrchardGrid() {
             })}
           </div>
         ))}
+        </div>{/* end min-width wrapper */}
       </div>
 
       {/* Selected Tree Panel */}
