@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getTrees, updateTree } from '../api/trees';
-import { getOrchards } from '../api/orchards';
+import { getOrchards, updateOrchard } from '../api/orchards';
 import { getVarieties } from '../api/varieties';
 import TreeCell from '../components/TreeCell';
 import TreeFilters from '../components/TreeFilters';
@@ -65,8 +65,48 @@ export default function OrchardGrid() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
+  const [addPosition, setAddPosition] = useState(null);
   const [rowMode, setRowMode] = useState('numbers');
   const [colMode, setColMode] = useState('numbers');
+
+  // Grid resize
+  const [showResize, setShowResize] = useState(false);
+  const [resizeRows, setResizeRows] = useState('');
+  const [resizeCols, setResizeCols] = useState('');
+  const [resizeSaving, setResizeSaving] = useState(false);
+  const [resizeError, setResizeError] = useState('');
+
+  const openResize = () => {
+    setResizeRows(String(orchard?.totalRows || 10));
+    setResizeCols(String(orchard?.totalColumns || 12));
+    setResizeError('');
+    setShowResize(true);
+  };
+
+  const saveResize = async () => {
+    const newRows = parseInt(resizeRows, 10);
+    const newCols = parseInt(resizeCols, 10);
+    if (!newRows || !newCols || newRows < 1 || newCols < 1) {
+      setResizeError('Rows and columns must be at least 1.');
+      return;
+    }
+    const outOfBounds = trees.find(t => t.rowNumber > newRows || t.columnNumber > newCols);
+    if (outOfBounds) {
+      setResizeError(`Tree at row ${outOfBounds.rowNumber}, col ${outOfBounds.columnNumber} would fall outside the new grid. Remove it first or use larger dimensions.`);
+      return;
+    }
+    setResizeSaving(true);
+    setResizeError('');
+    try {
+      const updated = await updateOrchard(orchard.id, { ...orchard, totalRows: newRows, totalColumns: newCols });
+      setOrchard(updated.data);
+      setShowResize(false);
+    } catch {
+      setResizeError('Failed to save. Please try again.');
+    } finally {
+      setResizeSaving(false);
+    }
+  };
 
   // Multi-select
   const [selectMode, setSelectMode] = useState(false);
@@ -185,12 +225,20 @@ export default function OrchardGrid() {
             </button>
           )}
           {!selectMode && (
-            <button
-              onClick={() => setShowAddForm(v => !v)}
-              className="bg-green-600 text-white text-sm px-4 py-2 rounded hover:bg-green-700"
-            >
-              + Add Tree
-            </button>
+            <>
+              <button
+                onClick={openResize}
+                className="text-sm px-4 py-2 rounded border border-gray-300 text-gray-600 hover:bg-gray-50"
+              >
+                ⊞ Resize Grid
+              </button>
+              <button
+                onClick={() => { setAddPosition(null); setShowAddForm(v => !v); }}
+                className="bg-green-600 text-white text-sm px-4 py-2 rounded hover:bg-green-700"
+              >
+                + Add Tree
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -237,13 +285,63 @@ export default function OrchardGrid() {
         </div>
       )}
 
+      {/* Resize Grid Panel */}
+      {showResize && (
+        <div className="bg-white border border-gray-200 rounded-lg p-5 mb-6 shadow-sm">
+          <h2 className="text-base font-semibold text-gray-800 mb-4">Resize Grid</h2>
+          <div className="flex flex-wrap gap-4 items-end">
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">Rows</label>
+              <input
+                type="number"
+                min="1"
+                max="200"
+                value={resizeRows}
+                onChange={e => setResizeRows(e.target.value)}
+                className="border border-gray-300 rounded px-3 py-1.5 text-sm w-24"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-600 mb-1">Columns</label>
+              <input
+                type="number"
+                min="1"
+                max="200"
+                value={resizeCols}
+                onChange={e => setResizeCols(e.target.value)}
+                className="border border-gray-300 rounded px-3 py-1.5 text-sm w-24"
+              />
+            </div>
+            <button
+              onClick={saveResize}
+              disabled={resizeSaving}
+              className="bg-green-600 text-white text-sm px-5 py-1.5 rounded hover:bg-green-700 disabled:opacity-40"
+            >
+              {resizeSaving ? 'Saving…' : 'Save'}
+            </button>
+            <button
+              onClick={() => setShowResize(false)}
+              className="text-sm px-4 py-1.5 rounded border border-gray-300 text-gray-500 hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+          </div>
+          {resizeError && <p className="mt-3 text-sm text-red-600">{resizeError}</p>}
+          <p className="mt-2 text-xs text-gray-400">Current: {orchard?.totalRows} × {orchard?.totalColumns}</p>
+        </div>
+      )}
+
       {showAddForm && !selectMode && (
         <div className="bg-white border border-gray-200 rounded-lg p-5 mb-6 shadow-sm">
-          <h2 className="text-base font-semibold text-gray-800 mb-4">Add New Tree</h2>
+          <h2 className="text-base font-semibold text-gray-800 mb-4">
+            Add New Tree{addPosition ? ` — Row ${addPosition.row}, Col ${addPosition.col}` : ''}
+          </h2>
           <TreeForm
             orchardId={orchard.id}
-            onSaved={() => { setShowAddForm(false); loadTrees(orchard.id); }}
-            onCancel={() => setShowAddForm(false)}
+            defaultRow={addPosition?.row}
+            defaultCol={addPosition?.col}
+            onSaved={() => { setShowAddForm(false); setAddPosition(null); loadTrees(orchard.id); }}
+            onCancel={() => { setShowAddForm(false); setAddPosition(null); }}
           />
         </div>
       )}
@@ -296,7 +394,17 @@ export default function OrchardGrid() {
               {Array.from({ length: cols }, (_, c) => {
                 const tree = treeMap[`${r + 1}-${c + 1}`];
                 if (!tree) return (
-                  <div key={c} className="w-12 h-12 shrink-0 rounded-md border-2 border-dashed border-gray-200 bg-gray-50" />
+                  <div
+                    key={c}
+                    title={`Add tree at row ${r + 1}, col ${c + 1}`}
+                    onClick={() => {
+                      if (selectMode) return;
+                      setAddPosition({ row: r + 1, col: c + 1 });
+                      setShowAddForm(true);
+                      setSelected(null);
+                    }}
+                    className="w-12 h-12 shrink-0 rounded-md border-2 border-dashed border-gray-200 bg-gray-50 cursor-pointer hover:border-green-400 hover:bg-green-50 transition-colors"
+                  />
                 );
                 return (
                   <TreeCell

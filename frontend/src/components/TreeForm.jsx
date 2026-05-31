@@ -4,12 +4,12 @@ import { getVarieties } from '../api/varieties';
 
 const STATUSES = ['HEALTHY', 'NEEDS_ATTENTION', 'DISEASED', 'DEAD'];
 
-export default function TreeForm({ orchardId, tree, onSaved, onCancel }) {
+export default function TreeForm({ orchardId, tree, defaultRow, defaultCol, onSaved, onCancel }) {
   const [varieties, setVarieties] = useState([]);
   const [form, setForm] = useState({
     orchardId,
-    rowNumber: tree?.rowNumber ?? '',
-    columnNumber: tree?.columnNumber ?? '',
+    rowNumber: tree?.rowNumber ?? defaultRow ?? '',
+    columnNumber: tree?.columnNumber ?? defaultCol ?? '',
     variety: tree?.variety ?? '',
     plantingDate: tree?.plantingDate ?? '',
     status: tree?.status ?? 'HEALTHY',
