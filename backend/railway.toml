@@ -1,0 +1,8 @@
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "java -jar target/orchard-0.0.1-SNAPSHOT.jar"
+healthcheckPath = "/api/orchards"
+healthcheckTimeout = 60
+restartPolicyType = "on_failure"
