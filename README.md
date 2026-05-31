@@ -1,207 +1,149 @@
-# Farm Land Management System
+# Farm CKP — Mango Orchard Management System
 
-A comprehensive, interactive grid-based digital farm management system for tracking and managing trees across farm land.
+A full-stack web application for managing mango orchards. Features an interactive grid-based layout for visualising and managing individual trees, with support for inspections, yield tracking, and orchard analytics.
 
-## Features
+## Tech Stack
 
-### Core Features
-- **Interactive Grid Interface**: 20 × 31 grid with unique coordinate labeling (A0, A1, B0, etc.)
-- **Tree Management**: Add, update, and remove trees with detailed attributes
-- **Real-time Visualization**: Color-coded display of tree status (alive/dead) and empty cells
-- **Farm Statistics**: View comprehensive analytics including total trees, yield analysis, and health status
-- **Data Persistence**: Save and load farm data from JSON files
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React 19, Vite, Tailwind CSS, Recharts |
+| Backend | Spring Boot 3.2, Java 21, Spring Data JPA |
+| Database | PostgreSQL 18 |
 
-### Tree Attributes
-Each tree stores:
-- **Type**: Category of tree (Mango, Apple, Teak, Coconut, Bamboo, Oak, etc.)
-- **Age**: Tree age in years
-- **Position**: Grid coordinate (e.g., A0, B12, Z19)
-- **Status**: Health status (Alive/Dead)
-- **Yield**: Total yield amount
-- **Seasonal Yield**: Yield breakdown by season (extensible)
+---
 
-### Statistics & Analytics
-- Total trees count
-- Alive vs. dead tree counts
-- Total yield across farm
-- Average tree age
-- Yield aggregated by tree type
-- Empty cell count
+## Prerequisites
+
+- **Java 21** — [Download Microsoft OpenJDK 21](https://www.microsoft.com/openjdk)
+- **Maven 3.8+**
+- **Node.js 18+**
+- **PostgreSQL 18**
+
+---
+
+## Database Setup
+
+1. Open a `psql` session as the `postgres` superuser:
+   ```bash
+   psql -U postgres
+   ```
+
+2. Create the user and database:
+   ```sql
+   CREATE USER farmuser WITH PASSWORD 'farmpass';
+   CREATE DATABASE farm_ckp OWNER farmuser;
+   \q
+   ```
+
+The backend uses `spring.jpa.hibernate.ddl-auto=create-drop` in development, so tables are created automatically on startup.
+
+---
+
+## Running the Backend
+
+```bash
+cd backend
+JAVA_HOME="/path/to/jdk-21" mvn spring-boot:run
+```
+
+> On Windows with Microsoft OpenJDK 21 installed via winget:
+> ```bash
+> JAVA_HOME="C:/Program Files/Microsoft/jdk-21.0.11.10-hotspot" mvn spring-boot:run
+> ```
+
+The API will be available at **http://localhost:8080**.
+
+---
+
+## Running the Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+The app will be available at **http://localhost:5173** (or `5174` if that port is in use).
+
+---
 
 ## Project Structure
 
 ```
 Farm_CKP/
-├── src/
-│   ├── __init__.py          # Package initialization
-│   ├── main.py              # Application entry point
-│   ├── tree.py              # Tree data model
-│   ├── farm.py              # Farm grid management logic
-│   ├── ui.py                # Tkinter-based interactive UI
-│   └── data_store.py        # JSON persistence layer
-├── README.md                # This file
-└── venv/                    # Virtual environment
+├── backend/                        # Spring Boot API
+│   └── src/main/java/com/farmckp/orchard/
+│       ├── config/                 # CORS, data initializer
+│       ├── controller/             # REST controllers
+│       ├── dto/                    # Request/response DTOs
+│       ├── entity/                 # JPA entities
+│       ├── repository/             # Spring Data repositories
+│       └── service/                # Business logic
+├── frontend/                       # React + Vite app
+│   └── src/
+│       ├── api/                    # Axios API clients
+│       ├── components/             # Shared UI components
+│       ├── pages/                  # Page-level components
+│       └── utils/                  # Helpers
+└── README.md
 ```
 
-## Architecture & Design
+---
 
-### Modular Design
-The system follows clean separation of concerns:
-- **Data Layer** (`tree.py`, `farm.py`): Pure data models and business logic
-- **UI Layer** (`ui.py`): Tkinter interface independent from data logic
-- **Persistence Layer** (`data_store.py`): Handles file I/O
-- **Main** (`main.py`): Application orchestration
+## API Endpoints
 
-### Extensibility
-The architecture supports future enhancements:
-- Add new tree types without modifying core logic
-- Implement database persistence (replace JSON)
-- Add seasonal tracking details
-- Create export formats (CSV, PDF)
-- Implement batch operations
-- Add filtering and search capabilities
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/orchards` | List all orchards |
+| PUT | `/api/orchards/{id}` | Update orchard (incl. grid dimensions) |
+| GET | `/api/trees?orchardId=` | List trees, with optional filters |
+| POST | `/api/trees` | Add a tree |
+| PUT | `/api/trees/{id}` | Update a tree |
+| DELETE | `/api/trees/{id}` | Delete a tree |
+| GET | `/api/trees/dashboard` | Dashboard stats |
+| GET | `/api/varieties` | List varieties |
+| POST | `/api/varieties` | Create variety |
+| PUT | `/api/varieties/{id}` | Update variety |
+| DELETE | `/api/varieties/{id}` | Delete variety |
+| GET | `/api/inspections?treeId=` | List inspections for a tree |
+| POST | `/api/inspections` | Record an inspection |
+| GET | `/api/yield-records?treeId=` | List yield records |
+| POST | `/api/yield-records` | Add a yield record |
+| GET | `/api/dropdown-options` | List dropdown options |
 
-## Usage
+---
 
-### Installation
+## Features
 
-1. Activate the virtual environment:
-```powershell
-.\venv\Scripts\Activate.ps1
+- **Interactive Orchard Grid** — visualise every tree position in a resizable rows × columns grid
+- **Click-to-add** — click any empty cell to open the Add Tree form pre-filled with that position
+- **Resize Grid** — expand or shrink the orchard grid to any dimension and save it
+- **Tree Management** — add, edit, and delete trees with variety, status, health score, yield, and notes
+- **Bulk Edit** — select multiple trees and update variety or status in one action
+- **Filters** — filter grid by status, row, column, variety, and minimum health score
+- **Label Modes** — toggle row/column headers between numbers (1, 2, 3…) and letters (A, B, C…)
+- **Inspections & Yield Records** — log inspections and track yield per tree over time
+- **Dashboard** — orchard-wide stats including tree count, health distribution, and yield totals
+- **Variety Management** — manage the list of mango varieties used across the orchard
+- **Dropdown Settings** — centralised settings page for managing all dropdown options
+
+---
+
+## Configuration
+
+Backend config lives in `backend/src/main/resources/application.properties`:
+
+```properties
+spring.datasource.url=jdbc:postgresql://localhost:5432/farm_ckp
+spring.datasource.username=farmuser
+spring.datasource.password=farmpass
+server.port=8080
 ```
 
-2. Run the application:
-```powershell
-python -m src.main
+Frontend API base URL is set in `frontend/src/api/client.js`:
+
+```js
+baseURL: 'http://localhost:8080/api'
 ```
 
-### Interactive Features
-
-#### Selecting a Cell
-- Click any cell in the grid to select it
-- Selected cell highlights in gold
-- Details panel updates with tree information (if any)
-
-#### Adding a Tree
-1. Select an empty cell
-2. Choose tree type from dropdown
-3. Set age and initial yield
-4. Click "Add Tree"
-
-#### Updating a Tree
-1. Select a cell with a tree
-2. Change status (Alive/Dead) using dropdown
-3. Click "Update Tree"
-
-#### Removing a Tree
-1. Select a cell with a tree
-2. Click "Remove Tree"
-
-#### Viewing Statistics
-1. Click "Show Statistics" button
-2. View comprehensive farm analytics in popup
-
-### Grid Coordinate System
-
-- **Columns**: A-T (20 letters)
-- **Rows**: 0-30 (31 total)
-- **Format**: Letter + Number (e.g., A0, T30, J15)
-- **Total Cells**: 620 (20 × 31)
-
-### Color Coding
-
-| Color | Meaning |
-|-------|---------|
-| Light Gray | Empty cell |
-| Light Green | Alive tree |
-| Light Red | Dead tree |
-| Gold | Selected cell |
-
-## Code Examples
-
-### Using the Data Model Directly
-
-```python
-from src.farm import Farm
-from src.tree import TreeStatus
-
-# Create a farm
-farm = Farm()
-
-# Add a tree
-farm.add_tree("A0", "Mango", age=5, yield_amount=45.5)
-
-# Update tree status
-farm.update_tree_status("A0", TreeStatus.DEAD)
-
-# Get statistics
-stats = farm.get_statistics()
-print(f"Total trees: {stats['total_trees']}")
-print(f"Total yield: {stats['total_yield']}")
-
-# Get all alive trees
-alive_trees = farm.get_alive_trees()
-```
-
-### Persistence
-
-```python
-from src.data_store import FarmDataStore
-
-# Save farm to file
-FarmDataStore.save_to_file(farm, "farm_backup.json")
-
-# Load farm from file
-FarmDataStore.load_from_file(farm, "farm_backup.json")
-
-# Export statistics report
-report = FarmDataStore.export_statistics(farm)
-with open("farm_report.txt", "w") as f:
-    f.write(report)
-```
-
-## Requirements
-
-- Python 3.7+
-- tkinter (included with Python)
-
-## Future Enhancements
-
-### Short-term
-- [ ] Search/filter trees by type
-- [ ] Batch operations (update multiple trees)
-- [ ] Undo/redo functionality
-- [ ] Keyboard shortcuts for common actions
-
-### Medium-term
-- [ ] CSV export/import
-- [ ] Image overlay for farm maps
-- [ ] Historical tracking (changes over time)
-- [ ] Disease/pest management tracking
-
-### Long-term
-- [ ] Multi-farm management
-- [ ] Web-based interface
-- [ ] Mobile app companion
-- [ ] Predictive analytics
-- [ ] Integration with weather data
-- [ ] Automated reports and alerts
-
-## Design Principles
-
-1. **Separation of Concerns**: Data, UI, and persistence are independent
-2. **Modularity**: Each component has a single responsibility
-3. **Extensibility**: Easy to add new features without breaking existing code
-4. **Readability**: Clear naming and documentation throughout
-5. **Testability**: Logic separated from UI for easy unit testing
-
-## License
-
-Open source - feel free to modify and extend.
-
-## Notes
-
-- The grid uses a letter-based column system that extends beyond Z (AA, AB, etc.)
-- All coordinates are immutable after tree creation
-- Yield values support decimal precision
-- The system can handle up to 620 trees with current grid size
+CORS is configured in `backend/.../config/WebConfig.java` to allow `localhost:5173` and `localhost:5174`.
